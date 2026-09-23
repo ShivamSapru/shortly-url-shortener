@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{baseUrl}}/api/shorten"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "longUrl": "not-a-url"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status is 400 Bad Request', () => pm.response.to.have.status(400));
+      pm.test('error message says what is wrong', () => {
+        pm.expect(pm.response.json().error).to.eql('longUrl must be a valid absolute URL, e.g. https://example.com');
+      });
+    language: text/javascript
+order: 2000

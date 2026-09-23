@@ -1,0 +1,34 @@
+$kind: http-request
+url: "{{baseUrl}}/api/shorten"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "longUrl": "{{longUrl}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status is 201 Created', () => pm.response.to.have.status(201));
+
+      const body = pm.response.json();
+
+      pm.test('returns a 7-char base62 shortCode', () => {
+        pm.expect(body.shortCode).to.match(/^[0-9A-Za-z]{7}$/);
+      });
+
+      pm.test('shortUrl ends with the shortCode', () => {
+        pm.expect(body.shortUrl).to.eql(`${pm.collectionVariables.get('baseUrl')}/${body.shortCode}`);
+      });
+
+      pm.test('Location header points at the short URL', () => {
+        pm.expect(pm.response.headers.get('Location')).to.eql(body.shortUrl);
+      });
+
+      // Hand the new code to the requests that follow.
+      pm.collectionVariables.set('shortCode', body.shortCode);
+    language: text/javascript
+order: 1000

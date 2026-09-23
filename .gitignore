@@ -1,0 +1,18 @@
+node_modules/
+.env
+.env.local
+.tools/
+npm-debug.log*
+/DATABASE_URL
+
+# Local tooling — not part of the project
+.agents/
+.claude/
+skills-lock.json
+.neon
+.postman/
+postman/.postman/
+postman/postman/
+# Neon starter files, unused (the app deploys to Render)
+hello.ts
+neon.ts

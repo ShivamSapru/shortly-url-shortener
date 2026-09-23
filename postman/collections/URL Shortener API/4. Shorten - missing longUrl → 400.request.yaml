@@ -1,0 +1,17 @@
+$kind: http-request
+url: "{{baseUrl}}/api/shorten"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: "{}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status is 400 Bad Request', () => pm.response.to.have.status(400));
+      pm.test('error says longUrl is required', () => {
+        pm.expect(pm.response.json().error).to.eql('longUrl is required');
+      });
+    language: text/javascript
+order: 4000

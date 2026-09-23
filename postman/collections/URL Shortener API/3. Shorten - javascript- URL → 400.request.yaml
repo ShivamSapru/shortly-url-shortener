@@ -1,0 +1,21 @@
+$kind: http-request
+name: "3. Shorten - javascript: URL → 400"
+url: "{{baseUrl}}/api/shorten"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "longUrl": "javascript:alert(1)"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status is 400 Bad Request', () => pm.response.to.have.status(400));
+      pm.test('rejects non-http(s) protocols (XSS guard)', () => {
+        pm.expect(pm.response.json().error).to.eql('longUrl must use the http or https protocol');
+      });
+    language: text/javascript
+order: 3000

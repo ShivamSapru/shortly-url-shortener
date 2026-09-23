@@ -1,0 +1,24 @@
+$kind: http-request
+url: "{{baseUrl}}/api/stats/{{shortCode}}"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('status is 200 OK', () => pm.response.to.have.status(200));
+
+      const stats = pm.response.json();
+      const today = new Date().toISOString().slice(0, 10); // UTC, like the API
+
+      pm.test('counts the click from request 5', () => {
+        pm.expect(stats.totalClicks).to.eql(1);
+      });
+
+      pm.test('daily breakdown has today with 1 click', () => {
+        pm.expect(stats.clicksPerDay).to.eql([{ day: today, clicks: 1 }]);
+      });
+
+      pm.test('referrer from request 5 is recorded', () => {
+        pm.expect(stats.referrers).to.eql([{ referrer: 'https://news.example/', clicks: 1 }]);
+      });
+    language: text/javascript
+order: 7000

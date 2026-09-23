@@ -1,0 +1,10 @@
+$kind: collection
+name: URL Shortener API
+description: |-
+  End-to-end checks for every endpoint. Run the requests in order (Collection Runner or `npm run test:api`): request 1 saves the new shortCode into the `shortCode` collection variable, and later requests use it.
+
+  Set `baseUrl` to wherever the API is running (default http://localhost:3000).
+variables:
+  baseUrl: http://localhost:3000
+  longUrl: https://example.com/postman-check
+  shortCode: ""
