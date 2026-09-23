@@ -99,10 +99,20 @@ describe("API integration", { skip }, () => {
     );
   });
 
-  it("describes the API at the root URL", async () => {
-    const res = await request(app).get("/").expect(200);
+  it("describes the API as JSON at the root URL for API clients", async () => {
+    const res = await request(app).get("/").set("Accept", "*/*").expect(200);
+    assert.match(res.headers["content-type"], /application\/json/);
     assert.match(res.body.name, /Shortly/);
     assert.ok(res.body.endpoints.shorten);
+  });
+
+  it("serves the landing page to browsers at the root URL", async () => {
+    const res = await request(app)
+      .get("/")
+      .set("Accept", "text/html,application/xhtml+xml,*/*;q=0.8")
+      .expect(200);
+    assert.match(res.headers["content-type"], /text\/html/);
+    assert.match(res.text, /<title>Shortly/);
   });
 
   it("answers /health without treating it as a short code", async () => {

@@ -2,7 +2,7 @@
 
 A REST API for shortening URLs and tracking how they are used. Send a long URL and get a short link back. Each visit to the short link is redirected and recorded, and an analytics endpoint reports total clicks, clicks per day and top referrers.
 
-**Live API:** https://shortly-url-shortener-izh4.onrender.com
+**Live demo:** https://shortly-url-shortener-izh4.onrender.com (shorten a link and view its analytics in the browser)
 <sub>Hosted on Render's free tier, so the first request after a period of inactivity can take up to a minute while the service wakes up.</sub>
 
 **Stack:** Node.js · Express · PostgreSQL (Neon) · node-postgres · Render · Postman
@@ -77,7 +77,7 @@ Returns analytics for a short link.
 
 ### `GET /` and `GET /health`
 
-`/` returns a short JSON description of the API with links to these docs. `/health` returns `{ "status": "ok" }` for uptime checks; it doesn't query the database, so frequent checks don't keep the database awake.
+`/` uses content negotiation: browsers get a landing page where visitors can shorten a URL and view its analytics, while API clients get a JSON description of the endpoints. `/health` returns `{ "status": "ok" }` for uptime checks; it doesn't query the database, so frequent checks don't keep the database awake.
 
 ### Status codes
 

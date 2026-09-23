@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shortly — URL Shortener</title>
+<meta name="description" content="Shorten a URL and see its click analytics: total clicks, clicks per day and top referrers.">
+<style>
+  :root {
+    --bg: #f7f7f5; --card: #ffffff; --text: #1c1c1a; --muted: #6b6b66;
+    --border: #e3e3de; --accent: #2f5bea; --accent-text: #ffffff;
+    --error: #c2362b; --ok-bg: #eef3ff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141413; --card: #1d1d1b; --text: #ecece8; --muted: #9a9a93;
+      --border: #33332f; --accent: #6b8cff; --accent-text: #0e0e0d;
+      --error: #ff7a6e; --ok-bg: #1f2640;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 48px 16px 64px; }
+  h1 { font-size: 2rem; margin: 0 0 4px; letter-spacing: -0.02em; }
+  .lede { color: var(--muted); margin: 0 0 32px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px; margin-bottom: 20px;
+  }
+  h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; }
+  input {
+    flex: 1 1 240px; min-width: 0; padding: 10px 12px; font: inherit;
+    color: var(--text); background: var(--bg);
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button {
+    padding: 10px 16px; font: inherit; font-weight: 600; cursor: pointer;
+    background: var(--accent); color: var(--accent-text);
+    border: 0; border-radius: 8px;
+  }
+  button.secondary {
+    background: transparent; color: var(--accent); border: 1px solid var(--border);
+  }
+  button:disabled { opacity: 0.6; cursor: wait; }
+  .error { color: var(--error); margin: 10px 0 0; }
+  .result { background: var(--ok-bg); border-radius: 8px; padding: 12px; margin-top: 12px; }
+  .result a { color: var(--accent); font-weight: 600; word-break: break-all; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .muted { color: var(--muted); font-size: 0.9rem; }
+  .total { font-size: 2rem; font-weight: 700; margin: 4px 0 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+  th, td { text-align: left; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  td:last-child, th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  td.ref { word-break: break-all; padding-right: 12px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+  footer { color: var(--muted); font-size: 0.9rem; text-align: center; }
+  footer a { color: inherit; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Shortly</h1>
+  <p class="lede">A URL shortener with click analytics. Shorten a link, open it, then check who clicked and when.</p>
+
+  <section class="card">
+    <h2>Shorten a URL</h2>
+    <form id="shorten-form">
+      <input id="long-url" type="text" placeholder="https://example.com/a/very/long/link" aria-label="Long URL" required>
+      <button id="shorten-btn" type="submit">Shorten</button>
+    </form>
+    <p id="shorten-error" class="error" hidden></p>
+    <div id="shorten-result" class="result" hidden>
+      <a id="short-link" href="#" target="_blank" rel="noopener"></a>
+      <div class="row">
+        <button id="copy-btn" class="secondary" type="button">Copy</button>
+        <button id="view-stats-btn" class="secondary" type="button">View stats</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Click analytics</h2>
+    <form id="stats-form">
+      <input id="stats-code" type="text" placeholder="Short code, e.g. aZ3kQ9x" aria-label="Short code" required>
+      <button id="stats-btn" type="submit">Get stats</button>
+    </form>
+    <p id="stats-error" class="error" hidden></p>
+    <div id="stats-result" hidden>
+      <p class="muted" id="stats-target"></p>
+      <div class="total" id="stats-total"></div>
+      <div class="grid">
+        <div>
+          <h2>Clicks per day (UTC)</h2>
+          <table><tbody id="stats-days"></tbody></table>
+        </div>
+        <div>
+          <h2>Top referrers</h2>
+          <table><tbody id="stats-refs"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Node.js · Express · PostgreSQL ·
+    <a href="https://github.com/ShivamSapru/shortly-url-shortener">Source &amp; API docs</a>
+    · by Shivam Sapru
+  </footer>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  async function api(path, options) {
+    const res = await fetch(path, options);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `Request failed (${res.status})`);
+    return body;
+  }
+
+  function show(el, visible) { el.hidden = !visible; }
+
+  // Rows are built with textContent, never innerHTML: referrers are
+  // attacker-controlled strings.
+  function fillTable(tbody, rows, emptyText) {
+    tbody.replaceChildren();
+    if (rows.length === 0) {
+      const tr = tbody.insertRow();
+      const td = tr.insertCell();
+      td.colSpan = 2; td.className = "muted"; td.textContent = emptyText;
+      return;
+    }
+    for (const [label, count] of rows) {
+      const tr = tbody.insertRow();
+      const a = tr.insertCell(); a.className = "ref"; a.textContent = label;
+      tr.insertCell().textContent = count;
+    }
+  }
+
+  let lastCode = "";
+
+  $("shorten-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = $("shorten-btn");
+    btn.disabled = true;
+    show($("shorten-error"), false);
+    try {
+      const data = await api("/api/shorten", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ longUrl: $("long-url").value }),
+      });
+      lastCode = data.shortCode;
+      $("short-link").href = data.shortUrl;
+      $("short-link").textContent = data.shortUrl;
+      $("copy-btn").textContent = "Copy";
+      show($("shorten-result"), true);
+    } catch (err) {
+      $("shorten-error").textContent = err.message;
+      show($("shorten-error"), true);
+      show($("shorten-result"), false);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  $("copy-btn").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText($("short-link").href);
+      $("copy-btn").textContent = "Copied";
+    } catch {
+      $("copy-btn").textContent = "Copy failed";
+    }
+  });
+
+  $("view-stats-btn").addEventListener("click", () => {
+    $("stats-code").value = lastCode;
+    loadStats(lastCode);
+  });
+
+  $("stats-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    // Accept a pasted short URL as well as a bare code.
+    const code = $("stats-code").value.trim().split("/").pop();
+    loadStats(code);
+  });
+
+  async function loadStats(code) {
+    const btn = $("stats-btn");
+    btn.disabled = true;
+    show($("stats-error"), false);
+    try {
+      const s = await api(`/api/stats/${encodeURIComponent(code)}`);
+      $("stats-target").textContent = `${s.shortCode} → ${s.longUrl}`;
+      $("stats-total").textContent =
+        `${s.totalClicks} click${s.totalClicks === 1 ? "" : "s"}`;
+      fillTable($("stats-days"), s.clicksPerDay.map((d) => [d.day, d.clicks]), "No clicks yet");
+      fillTable($("stats-refs"), s.referrers.map((r) => [r.referrer, r.clicks]), "No clicks yet");
+      show($("stats-result"), true);
+      $("stats-result").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    } catch (err) {
+      $("stats-error").textContent = err.message;
+      show($("stats-error"), true);
+      show($("stats-result"), false);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>
