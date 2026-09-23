@@ -21,7 +21,7 @@ scripts:
       });
 
       pm.test('shortUrl ends with the shortCode', () => {
-        pm.expect(body.shortUrl).to.eql(`${pm.collectionVariables.get('baseUrl')}/${body.shortCode}`);
+        pm.expect(body.shortUrl).to.eql(`${pm.variables.get('baseUrl')}/${body.shortCode}`);
       });
 
       pm.test('Location header points at the short URL', () => {
