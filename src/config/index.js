@@ -17,7 +17,12 @@ function required(name) {
 const config = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT) || 3000,
-  baseUrl: (process.env.BASE_URL || "http://localhost:3000").replace(/\/$/, ""),
+  // Render sets RENDER_EXTERNAL_URL to the service's public URL automatically.
+  baseUrl: (
+    process.env.BASE_URL ||
+    process.env.RENDER_EXTERNAL_URL ||
+    "http://localhost:3000"
+  ).replace(/\/$/, ""),
   // Tests truncate tables, so they must never fall back to DATABASE_URL.
   get databaseUrl() {
     return this.nodeEnv === "test"
