@@ -75,6 +75,10 @@ Returns analytics for a short link.
 }
 ```
 
+### `GET /` and `GET /health`
+
+`/` returns a short JSON description of the API with links to these docs. `/health` returns `{ "status": "ok" }` for uptime checks; it doesn't query the database, so frequent checks don't keep the database awake.
+
 ### Status codes
 
 | Endpoint | Case | Status |

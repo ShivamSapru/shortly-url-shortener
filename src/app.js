@@ -1,6 +1,7 @@
 const express = require("express");
 const { apiRouter } = require("./routes/api.routes");
 const { redirectRouter } = require("./routes/redirect.routes");
+const { metaRouter } = require("./routes/meta.routes");
 const { errorHandler } = require("./middleware/errorHandler");
 
 function createApp() {
@@ -13,6 +14,9 @@ function createApp() {
   app.use(express.json({ limit: "16kb" }));
 
   app.use("/api", apiRouter);
+  // Before the redirect router: "health" is a valid-looking short code and
+  // would otherwise be looked up (and 404) as one.
+  app.use("/", metaRouter);
   app.use("/", redirectRouter);
 
   app.use((_req, res) => {

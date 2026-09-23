@@ -99,6 +99,17 @@ describe("API integration", { skip }, () => {
     );
   });
 
+  it("describes the API at the root URL", async () => {
+    const res = await request(app).get("/").expect(200);
+    assert.match(res.body.name, /Shortly/);
+    assert.ok(res.body.endpoints.shorten);
+  });
+
+  it("answers /health without treating it as a short code", async () => {
+    const res = await request(app).get("/health").expect(200);
+    assert.deepEqual(res.body, { status: "ok" });
+  });
+
   it("returns 404 for unknown and malformed short codes", async () => {
     await request(app).get("/api/stats/zzzzzzz").expect(404);
     await request(app).get("/zzzzzzz").expect(404);
